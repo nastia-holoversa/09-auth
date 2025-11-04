@@ -1,7 +1,7 @@
 import { QueryClient, dehydrate } from "@tanstack/react-query";
 import { HydrationBoundary } from "@tanstack/react-query";
 import { fetchNoteById } from "@/lib/api/clientApi";
-import NoteDetailsClient from "./NotesDetails.client";
+import NoteDetailsClient from "./NoteDetails.client";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import axios from "axios";

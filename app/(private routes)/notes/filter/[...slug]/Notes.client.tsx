@@ -18,7 +18,7 @@ import type { Note, NoteTag } from "@/types/note";
 const PER_PAGE = 12;
 
 interface NotesClientProps {
-  tag?: NoteTag;
+  tag?: NoteTag | "All";
 }
 
 export default function NotesClient({ tag }: NotesClientProps) {
@@ -28,9 +28,18 @@ export default function NotesClient({ tag }: NotesClientProps) {
   const [search, setSearch] = useState("");
   const [debouncedSearch] = useDebounce(search, 500);
 
+  const handleSearchChange = (value: string) => {
+    setSearch(value);
+    setCurrentPage(1);
+  };
+
   const queryParams = useMemo(() => {
     const base = { page: currentPage, perPage: PER_PAGE, search: debouncedSearch };
-    return tag ? { ...base, tag } : base;
+
+    if (tag && tag !== "All") {
+      return { ...base, tag };
+    }
+    return base;
   }, [tag, currentPage, debouncedSearch]);
 
   const { data, isLoading, isError, error } = useQuery({
@@ -42,9 +51,8 @@ export default function NotesClient({ tag }: NotesClientProps) {
     retry: false,
   });
 
-  const notes: Note[] = Array.isArray(data) ? data : data?.notes || [];
-  const totalPages: number =
-    data && !Array.isArray(data) && data.totalPages ? data.totalPages : 1;
+  const notes: Note[] = data?.notes || [];
+  const totalPages: number = data?.totalPages || 1;
 
   if (isLoading) {
     return <p>Loading, please wait...</p>;
@@ -61,10 +69,7 @@ export default function NotesClient({ tag }: NotesClientProps) {
       <Toaster position="top-right" reverseOrder={false} />
 
       <header className={css.toolbar}>
-        <SearchBox value={search} onChange={(value) => {
-          setSearch(value);
-          setCurrentPage(1);
-        }} />
+        <SearchBox value={search} onChange={handleSearchChange} />
         <Link href="/notes/action/create" className={css.button}>
           + Create note
         </Link>
