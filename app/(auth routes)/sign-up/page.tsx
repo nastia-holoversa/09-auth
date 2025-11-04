@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import axios from "axios";
 import { register } from "@/lib/api/clientApi";
+import { useAuthStore } from "@/lib/store/authStore";
 import css from "./SignUp.module.css";
 
 export default function SignUpPage() {
@@ -11,19 +12,25 @@ export default function SignUpPage() {
   const [errorMessage, setErrorMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
+  const { setUser } = useAuthStore();
+
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
     const formData = new FormData(event.currentTarget);
     const email = formData.get("email") as string;
+    const username = formData.get("username") as string;
     const password = formData.get("password") as string;
 
     try {
       setIsLoading(true);
       setErrorMessage("");
-      await register({ email, password });
 
-      router.push("/profile/edit");
+      const newUser = await register({ email, password, username });
+
+      setUser(newUser);
+
+      router.push("/profile");
     } catch (error: unknown) {
       if (axios.isAxiosError(error) && error.response?.data?.message) {
         setErrorMessage(error.response.data.message);
@@ -47,7 +54,7 @@ export default function SignUpPage() {
 
         <div className={css.formGroup}>
           <label htmlFor="username">Username</label>
-          <input id="username" type="text" name="username" className={css.input} />
+          <input id="username" type="text" name="username" className={css.input} required />
         </div>
 
         <div className={css.formGroup}>

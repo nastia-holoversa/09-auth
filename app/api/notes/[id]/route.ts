@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
 import { api } from '../../api';
 import { cookies } from 'next/headers';
-import { logErrorResponse } from '@/app/api/_utils/utils';
 import { isAxiosError } from 'axios';
+import { logErrorResponse } from '../../_utils/utils';
 
 type Props = {
   params: Promise<{ id: string }>;
@@ -12,11 +12,13 @@ export async function GET(request: Request, { params }: Props) {
   try {
     const cookieStore = await cookies();
     const { id } = await params;
+
     const res = await api(`/notes/${id}`, {
       headers: {
         Cookie: cookieStore.toString(),
       },
     });
+
     return NextResponse.json(res.data, { status: res.status });
   } catch (error) {
     if (isAxiosError(error)) {
@@ -41,6 +43,7 @@ export async function DELETE(request: Request, { params }: Props) {
         Cookie: cookieStore.toString(),
       },
     });
+
     return NextResponse.json(res.data, { status: res.status });
   } catch (error) {
     if (isAxiosError(error)) {
@@ -66,6 +69,7 @@ export async function PATCH(request: Request, { params }: Props) {
         Cookie: cookieStore.toString(),
       },
     });
+
     return NextResponse.json(res.data, { status: res.status });
   } catch (error) {
     if (isAxiosError(error)) {

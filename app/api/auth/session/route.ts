@@ -3,8 +3,7 @@ import { cookies } from "next/headers";
 import { api } from "../../api";
 import { parse } from "cookie";
 import { isAxiosError } from "axios";
-import { logErrorResponse } from '@/app/api/_utils/utils';
-
+import { logErrorResponse } from "@/app/api/_utils/utils";
 
 export async function GET() {
   try {
@@ -17,7 +16,7 @@ export async function GET() {
     }
 
     if (refreshToken) {
-      const apiRes = await api.get("auth/session", {
+      const apiRes = await api.get("/auth/session", {
         headers: {
           Cookie: cookieStore.toString(),
         },
@@ -27,23 +26,27 @@ export async function GET() {
 
       if (setCookie) {
         const cookieArray = Array.isArray(setCookie) ? setCookie : [setCookie];
+
         for (const cookieStr of cookieArray) {
           const parsed = parse(cookieStr);
 
           const options = {
             expires: parsed.Expires ? new Date(parsed.Expires) : undefined,
             path: parsed.Path,
-            maxAge: Number(parsed["Max-Age"]),
+            maxAge: parsed["Max-Age"] ? Number(parsed["Max-Age"]) : undefined,
           };
 
-          if (parsed.accessToken)
+          if (parsed.accessToken) {
             cookieStore.set("accessToken", parsed.accessToken, options);
-          if (parsed.refreshToken)
+          }
+          if (parsed.refreshToken) {
             cookieStore.set("refreshToken", parsed.refreshToken, options);
+          }
         }
         return NextResponse.json({ success: true }, { status: 200 });
       }
     }
+
     return NextResponse.json({ success: false }, { status: 200 });
   } catch (error) {
     if (isAxiosError(error)) {

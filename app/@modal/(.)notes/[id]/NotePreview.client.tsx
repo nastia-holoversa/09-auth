@@ -4,6 +4,8 @@ import { useQuery } from "@tanstack/react-query";
 import { useParams, useRouter } from "next/navigation";
 import { fetchNoteById } from "@/lib/api/clientApi";
 import type { Note } from "@/types/note";
+
+import Modal from "@/components/Modal/Modal";
 import css from "./NotePreviewClient.module.css";
 
 interface NotePreviewClientProps {
@@ -17,14 +19,14 @@ export default function NotePreviewClient({ note }: NotePreviewClientProps) {
   const idParam = params?.id;
   const id = Array.isArray(idParam)
     ? idParam[0]
-    : idParam
-    ? String(idParam)
+    : typeof idParam === "string"
+    ? idParam
     : "";
 
   const { data, isLoading, isError } = useQuery({
     queryKey: ["note", id],
     queryFn: () => fetchNoteById(id),
-    enabled: !note && !!id,
+    enabled: !!id && !note,
     retry: false,
     refetchOnMount: false,
   });
@@ -33,32 +35,21 @@ export default function NotePreviewClient({ note }: NotePreviewClientProps) {
 
   const handleClose = () => router.back();
 
-  if (!id && !note) return null;
-
   return (
-    <div className={css.backdrop} onClick={handleClose}>
-      <div
-        className={css.modal}
-        onClick={(e) => e.stopPropagation()}
-        role="dialog"
-        aria-modal="true"
-      >
-        {isLoading && !currentNote && <p>Loading note...</p>}
-        {isError && <p>Note not found 😔</p>}
+    <Modal onClose={handleClose}>
+      {!id && !note && <p>Note ID is missing</p>}
 
-        {currentNote && (
-          <div className={css.noteContent}>
-            <h2 className={css.title}>{currentNote.title}</h2>
-            <p className={css.content}>{currentNote.content}</p>
-            <p className={css.tag}>Tag: {currentNote.tag}</p>
-          </div>
-        )}
+      {isLoading && !currentNote && <p>Loading note...</p>}
 
-        <button onClick={handleClose} className={css.closeBtn}>
-          Close
-        </button>
-      </div>
-    </div>
+      {isError && <p>Note not found 😔</p>}
+
+      {currentNote && (
+        <div className={css.noteContent}>
+          <h2 className={css.title}>{currentNote.title}</h2>
+          <p className={css.content}>{currentNote.content}</p>
+          <p className={css.tag}>Tag: {currentNote.tag}</p>
+        </div>
+      )}
+    </Modal>
   );
 }
-

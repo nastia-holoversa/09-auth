@@ -1,6 +1,6 @@
 import { QueryClient, dehydrate } from "@tanstack/react-query";
 import { HydrationBoundary } from "@tanstack/react-query";
-import { fetchNoteById } from "@/lib/api/clientApi";
+import { fetchNoteByIdServer } from "@/lib/api/serverApi";
 import NotePreviewClient from "./NotePreview.client";
 import Modal from "@/components/Modal/Modal";
 import { notFound } from "next/navigation";
@@ -8,11 +8,11 @@ import type { Note } from "@/types/note";
 import axios from "axios";
 
 interface Props {
-  params: { id?: string };
+  params: Promise<{ id: string }>;
 }
 
 export default async function NotePreviewModal({ params }: Props) {
-  const id = params.id;
+  const { id } = await params;
 
   if (!id) return null;
 
@@ -21,7 +21,10 @@ export default async function NotePreviewModal({ params }: Props) {
   try {
     await queryClient.prefetchQuery({
       queryKey: ["note", id],
-      queryFn: () => fetchNoteById(id),
+      queryFn: async () => {
+        const res = await fetchNoteByIdServer(id);
+        return res.data;
+      },
     });
   } catch (error) {
     if (axios.isAxiosError(error) && error.response?.status === 404) {

@@ -1,54 +1,48 @@
-import { QueryClient, dehydrate } from "@tanstack/react-query";
-import { HydrationBoundary } from "@tanstack/react-query";
-import { fetchNotes } from "@/lib/api/clientApi"; 
+import { HydrationBoundary, dehydrate, QueryClient } from "@tanstack/react-query";
+import NotesClient from "./Notes.client";
+import { fetchNotesServer } from "@/lib/api/serverApi";
 import type { NoteTag } from "@/types/note";
 import type { Metadata } from "next";
-import NotesClient from "./Notes.client";
 
 interface Props {
-  params: { slug?: string[] };
+  params: Promise<{ slug?: string[] }>;
 }
 
+// ✅ Метадані (асинхронні + await params — щоб не було помилки)
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const tag = params.slug?.[0];
-  const allowedTags: NoteTag[] = ["Todo", "Work", "Personal", "Meeting", "Shopping"];
-
-  const isNoteTag = (value: unknown): value is NoteTag =>
-    typeof value === "string" && allowedTags.includes(value as NoteTag);
-
-  const validTag = tag && tag.toLowerCase() !== "all" && isNoteTag(tag) ? tag : "All";
+  const { slug } = await params;
+  const tag = slug?.[0];
 
   return {
-    title:
-      validTag === "All"
-        ? "All Notes | NoteHub"
-        : `${validTag} Notes | NoteHub`,
+    title: tag && tag.toLowerCase() !== "all" ? `${tag} Notes | NoteHub` : "All Notes | NoteHub",
     description: "Browse your notes easily with filtering and search.",
   };
 }
 
 export default async function NotesFilterPage({ params }: Props) {
-  const tag = params.slug?.[0];
+  const { slug } = await params;
   const queryClient = new QueryClient();
 
+  const tag = slug?.[0];
   const allowedTags: NoteTag[] = ["Todo", "Work", "Personal", "Meeting", "Shopping"];
-  const isValidTag = (value: unknown): value is NoteTag =>
-    typeof value === "string" && allowedTags.includes(value as NoteTag);
+  const isValidTag = (v: unknown): v is NoteTag =>
+    typeof v === "string" && allowedTags.includes(v as NoteTag);
 
-  const queryParams =
+  // ✅ Без undefined у tag → TypeScript більше не лається
+  const baseParams = { page: 1, perPage: 12 };
+
+  const queryParams: Record<string, string | number> =
     tag && tag.toLowerCase() !== "all" && isValidTag(tag)
-      ? { tag, page: 1, perPage: 12 }
-      : { page: 1, perPage: 12 };
+      ? { ...baseParams, tag }
+      : baseParams;
 
-  try {
-    await queryClient.prefetchQuery({
-      queryKey: ["notes", queryParams],
-      queryFn: () => fetchNotes(queryParams), 
-    });
-  } catch {
-  }
+  // ✅ Prefetch із serverApi (правильно!)
+  await queryClient.prefetchQuery({
+  queryKey: ["notes", queryParams],
+  queryFn: () => fetchNotesServer(queryParams).then(res => res.data),
+});
 
-  const validTag = tag && tag.toLowerCase() !== "all" && isValidTag(tag) ? tag : undefined;
+  const validTag = tag && isValidTag(tag) ? tag : undefined;
 
   return (
     <HydrationBoundary state={dehydrate(queryClient)}>

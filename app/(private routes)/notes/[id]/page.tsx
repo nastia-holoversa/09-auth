@@ -1,6 +1,6 @@
 import { QueryClient, dehydrate } from "@tanstack/react-query";
 import { HydrationBoundary } from "@tanstack/react-query";
-import { fetchNoteById } from "@/lib/api/clientApi";
+import { fetchNoteByIdServer } from "@/lib/api/serverApi";
 import NoteDetailsClient from "./NoteDetails.client";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
@@ -15,7 +15,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id } = params;
 
   try {
-    const note = await fetchNoteById(id);
+    const res = await fetchNoteByIdServer(id);
+    const note = res.data;
+
     return {
       title: `${note.title} | NoteHub`,
       description: note.content?.slice(0, 100) || "Note preview",
@@ -35,7 +37,10 @@ export default async function NoteDetailsPage({ params }: Props) {
   try {
     await queryClient.prefetchQuery({
       queryKey: ["note", id],
-      queryFn: () => fetchNoteById(id),
+      queryFn: async () => {
+        const res = await fetchNoteByIdServer(id);
+        return res.data;
+      },
     });
   } catch (error) {
     if (axios.isAxiosError(error) && error.response?.status === 404) {

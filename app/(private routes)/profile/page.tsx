@@ -1,17 +1,40 @@
-"use client";
-
+import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
-import { useAuthStore } from "@/lib/store/authStore";
 import css from "./ProfilePage.module.css";
+import { getMeServer } from "@/lib/api/serverApi";
 
-export default function ProfilePage() {
-  const { user } = useAuthStore();
+export const metadata: Metadata = {
+  title: "NoteHub — create and organize your notes easily",
+  description: "NoteHub is a modern note management app that helps you create, organize, and search your notes quickly and efficiently.",
+  openGraph: {
+    title: "NoteHub — create and organize your notes easily",
+    description: "Keep your ideas organized and accessible anywhere with NoteHub — your personal space for smart note-taking.",
+    url: "https://09-auth-five-snowy.vercel.app/",
+    images: [
+      {
+        url: "https://ac.goit.global/fullstack/react/notehub-og-meta.jpg",
+        width: 1200,
+        height: 630,
+        alt: "Profile Page",
+      },
+    ],
+  },
+};
 
-  if (!user) return <p>Loading...</p>;
+export default async function ProfilePage() {
+  const res = await getMeServer();
+  const user = res.data;
 
-  const avatarSrc =
-    user.avatar || "https://via.placeholder.com/120?text=Avatar";
+  if (!user) {
+    return (
+      <main className={css.mainContent}>
+        <p>User not found</p>
+      </main>
+    );
+  }
+
+  const avatarSrc = user.avatar || "/default-avatar.png";
 
   return (
     <main className={css.mainContent}>
@@ -30,8 +53,7 @@ export default function ProfilePage() {
             width={120}
             height={120}
             className={css.avatar}
-            loader={() => avatarSrc}
-            unoptimized              
+            unoptimized
           />
         </div>
 
